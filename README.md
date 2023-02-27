@@ -1,4 +1,4 @@
-Project Nighthold Core
+Welcome to Legends of Azeroth Legion Core  based on Project Nighthold Core
 
 * [Introduction to Nighthold](#introduction)
 * [Our Project Goals](#Goals)
