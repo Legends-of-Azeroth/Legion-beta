@@ -15,16 +15,16 @@ concurrency:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+  BUILD_TYPE: RelWithDebInfo
   REPO_DIR : ${{github.workspace}}
   BUILD_DIR: ${{github.workspace}}/bin/builddir
   BOOST_TOOLSET: "msvc14.1"
-  BOOST_VERSION: "1.64.0"
+  BOOST_VERSION: "1.69.0"
   BOOST_INSTALL_DIR: "${{github.workspace}}/bin"
   
 jobs:
   build:
-    runs-on: windows-2017
+    runs-on: windows-2019
     
     steps:
     #git checkout
@@ -120,5 +120,5 @@ jobs:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         automatic_release_tag: "latest"
         prerelease: true
-        title: "Development Build(${{ steps.date.outputs.date }})"
+        title: " New Development Build(${{ steps.date.outputs.date }})"
         files: all_snapshots
