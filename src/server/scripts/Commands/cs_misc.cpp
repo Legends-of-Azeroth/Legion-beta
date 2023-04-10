@@ -1,19 +1,18 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "AccountMgr.h"
@@ -965,10 +964,7 @@ public:
 
         if (target->isAlive())
         {
-            if (sWorld->getBoolConfig(CONFIG_DIE_COMMAND_MODE))
-                handler->GetSession()->GetPlayer()->Kill(target);
-            else
-                handler->GetSession()->GetPlayer()->DealDamage(target, target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+            handler->GetSession()->GetPlayer()->DealDamage(target, target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
         }
 
         return true;
@@ -1879,7 +1875,6 @@ public:
             return false;
 
         uint32 accId            = 0;
-        uint32 bnetaccId        = 0;
         uint32 money            = 0;
         uint32 totalPlayerTime  = 0;
         uint32 totalAccountTime = 0;
@@ -1902,7 +1897,6 @@ public:
                 return false;
 
             accId             = target->GetSession()->GetAccountId();
-            bnetaccId         = target->GetSession()->GetBattlenetAccountId();
             money             = target->GetMoney();
             totalPlayerTime   = target->GetTotalPlayedTime();
             level             = target->getLevel();
@@ -1959,7 +1953,6 @@ public:
             security      = fields[1].GetUInt8();
             eMail         = fields[2].GetString();
             muteTime      = fields[5].GetUInt64();
-            bnetaccId     = fields[6].GetUInt32();
 
             if (handler->GetSession()->GetSecurity() <= 3)
                 eMail = "IT`S SECRET!";
@@ -1998,7 +1991,7 @@ public:
 
         std::string nameLink = handler->playerLink(targetName);
 
-        handler->PSendSysMessage(LANG_PINFO_ACCOUNT, (target ? "" : handler->GetTrinityString(LANG_OFFLINE)), nameLink.c_str(), targetGuid.GetGUIDLow(), userName.c_str(), accId, bnetaccId, eMail.c_str(), security, lastIp.c_str(), lastLogin.c_str(), latency);
+        handler->PSendSysMessage(LANG_PINFO_ACCOUNT, (target ? "" : handler->GetTrinityString(LANG_OFFLINE)), nameLink.c_str(), targetGuid.GetGUIDLow(), userName.c_str(), accId, accId, eMail.c_str(), security, lastIp.c_str(), lastLogin.c_str(), latency);
 
         std::string bannedby = "unknown";
         std::string banreason = "";

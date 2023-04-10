@@ -1,20 +1,20 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
- */
+* Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+* Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+*
+* This program is free software; you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by the
+* Free Software Foundation; either version 2 of the License, or (at your
+* option) any later version.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+* more details.
+*
+* You should have received a copy of the GNU General Public License along
+* with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "WorldSocket.h"
 #include "AuthenticationPackets.h"
@@ -30,11 +30,11 @@
 #include "World.h"
 #include "Warden.h"
 #include "Duration.h"
-#include "RealmList.h"
 
 #include <zlib.h>
 #include <memory>
 #include "DatabaseEnv.h"
+#include "RealmList.h"
 
 #pragma pack(push, 1)
 
@@ -174,19 +174,11 @@ void WorldSocket::InitializeHandler(boost::system::error_code error, std::size_t
             }
 
             ByteBuffer buffer(std::move(_packetBuffer));
-            try
+            if (/*initializer*/buffer.ReadString(ClientConnectionInitialize.length()) != ClientConnectionInitialize)
             {
-                if (/*initializer*/buffer.ReadString(ClientConnectionInitialize.length()) != ClientConnectionInitialize)
-                {
-                    TC_LOG_TRACE(LOG_FILTER_NETWORKIO, "WorldSocket::InitializeHandler: initializer (address: %s)", GetRemoteIpAddress().to_string().c_str());
-                    CloseSocket();
-                    return;
-                }
-            }
-            catch (ByteBufferException const&)
-            {
-                TC_LOG_TRACE(LOG_FILTER_NETWORKIO, "WorldSocket::InitializeHandler ByteBufferException occured while parsing a socket initialization packet from address %s. Skipped packet.",
-                    GetRemoteIpAddress().to_string().c_str());
+                TC_LOG_TRACE(LOG_FILTER_NETWORKIO, "WorldSocket::InitializeHandler: initializer (address: %s)", GetRemoteIpAddress().to_string().c_str());
+                CloseSocket();
+                return;
             }
 
             if (/*terminator*/buffer.read<uint8>() != '\n')
@@ -645,12 +637,10 @@ struct AccountInfo
 {
     struct
     {
-        uint32 Id;
         bool IsLockedToIP;
         std::string LastIP;
         std::string LockCountry;
         LocaleConstant Locale;
-        bool IsBanned;
 
     } BattleNet;
 
@@ -671,17 +661,16 @@ struct AccountInfo
 
     bool IsBanned() const
     {
-        return BattleNet.IsBanned || Game.IsBanned;
+        return Game.IsBanned;
     }
 
     explicit AccountInfo(Field* fields)
     {
-        //           0             1           2          3                4            5           6          7            8     9     10          11  12
-        // SELECT a.id, a.sessionkey, ba.last_ip, ba.locked, ba.lock_country, a.expansion, a.mutetime, ba.locale, a.recruiter, a.os, ba.id, aa.gmLevel, aa.AtAuthFlag,
-        //                                                              13                                                            14    15     16
-        // bab.unbandate > UNIX_TIMESTAMP() OR bab.unbandate = bab.bandate, ab.unbandate > UNIX_TIMESTAMP() OR ab.unbandate = ab.bandate, r.id, a.hwid
-        // FROM account a LEFT JOIN battlenet_accounts ba ON a.battlenet_account = ba.id LEFT JOIN account_access aa ON a.id = aa.id AND aa.RealmID IN (-1, ?)
-        // LEFT JOIN battlenet_account_bans bab ON ba.id = bab.id LEFT JOIN account_banned ab ON a.id = ab.id LEFT JOIN account r ON a.id = r.recruiter
+        //          0          1            2          3               4           5           6          7           8     9           10          11
+        // SELECT a.id, a.sessionkey, a.last_ip, a.locked, a.lock_country, a.expansion, a.mutetime, a.locale, a.recruiter, a.os, aa.gmLevel, a.AtAuthFlag,
+        //                                                           12   13       14
+        // ab.unbandate > UNIX_TIMESTAMP() OR ab.unbandate = ab.bandate, r.id, a.hwid
+        // FROM account a LEFT JOIN account r ON a.id = r.recruiter LEFT JOIN account_access aa ON a.id = aa.id AND aa.RealmID IN (-1, ?) LEFT JOIN account_banned ab ON a.id = ab.id AND ab.active = 1
         // WHERE a.username = ? ORDER BY aa.RealmID DESC LIMIT 1
         Game.Id = fields[0].GetUInt32();
         HexStrToByteArray(fields[1].GetString(), Game.KeyData.data());
@@ -693,13 +682,11 @@ struct AccountInfo
         BattleNet.Locale = LocaleConstant(fields[7].GetUInt8());
         Game.Recruiter = fields[8].GetUInt32();
         Game.OS = fields[9].GetString();
-        BattleNet.Id = fields[10].GetUInt32();
-        Game.Security = AccountTypes(fields[11].GetUInt8());
-        BattleNet.IsBanned = fields[13].GetUInt64() != 0;
-        Game.IsBanned = fields[14].GetUInt64() != 0;
-        Game.IsRectuiter = fields[15].GetUInt32() != 0;
-        Game.AtAuthFlag = AuthFlags(fields[12].GetUInt16());
-        Game.Hwid = fields[16].GetUInt64();
+        Game.Security = AccountTypes(fields[10].GetUInt8());
+        Game.IsBanned = fields[12].GetUInt64() != 0;
+        Game.IsRectuiter = fields[13].GetUInt32() != 0;
+        Game.AtAuthFlag = AuthFlags(fields[11].GetUInt16());
+        Game.Hwid = fields[14].GetUInt64();
         if (BattleNet.Locale >= MAX_LOCALES)
             BattleNet.Locale = LOCALE_enUS;
     }
@@ -726,15 +713,16 @@ void WorldSocket::HandleAuthSessionCallback(std::shared_ptr<WorldPackets::Auth::
         DelayedCloseSocket();
         return;
     }
-	
-	    RealmBuildInfo const* buildInfo = sRealmList->GetBuildInfo(realm.Build);
-    if (!buildInfo)
-    {
-        SendAuthResponseError(ERROR_BAD_VERSION);
-        TC_LOG_ERROR(LOG_FILTER_NETWORKIO, "WorldSocket::HandleAuthSession: Missing auth seed for realm build %u (%s).", realm.Build, GetRemoteIpAddress().to_string().c_str());
-        DelayedCloseSocket();
-        return;
-    }
+
+	RealmBuildInfo const* buildInfo = sRealmList->GetBuildInfo(realm.Build);
+	if (!buildInfo)
+	{
+		SendAuthResponseError(ERROR_BAD_VERSION);
+		TC_LOG_ERROR(LOG_FILTER_NETWORKIO, "WorldSocket::HandleAuthSession: Missing auth seed for realm build %u (%s).", realm.Build, GetRemoteIpAddress().to_string().c_str());
+		DelayedCloseSocket();
+		return;
+	}
+
 
     AccountInfo account(result->Fetch());
 
@@ -873,7 +861,7 @@ void WorldSocket::HandleAuthSessionCallback(std::shared_ptr<WorldPackets::Auth::
 
     _authed = true;
 
-    _worldSession = std::make_shared<WorldSession>(account.Game.Id, std::move(authSession->RealmJoinTicket), account.BattleNet.Id, shared_from_this(), account.Game.Security,
+    _worldSession = std::make_shared<WorldSession>(account.Game.Id, std::move(authSession->RealmJoinTicket), shared_from_this(), account.Game.Security,
         account.Game.Expansion, mutetime, account.Game.OS, account.BattleNet.Locale, account.Game.Recruiter, account.Game.IsRectuiter, AuthFlags(account.Game.AtAuthFlag));
 
     _worldSession->_realmID = authSession->RealmID;

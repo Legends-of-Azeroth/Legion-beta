@@ -1,19 +1,19 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /** \file
@@ -72,8 +72,8 @@ void WorldPackets::Null::Read()
     _worldPacket.rfinish();
 }
 
-WorldSession::WorldSession(uint32 id, std::string&& name, uint32 battlenetAccountId, const std::shared_ptr<WorldSocket>& sock, AccountTypes sec, uint8 expansion, time_t mute_time, std::string os, LocaleConstant locale, uint32 recruiter, bool isARecruiter, AuthFlags flag):
-m_muteTime(mute_time), m_timeOutTime(0), _countPenaltiesHwid(0), _player(nullptr), m_map(nullptr), _security(sec), _accountId(id), _battlenetAccountId(battlenetAccountId), m_expansion(expansion), m_accountExpansion(expansion), _logoutTime(0), m_inQueue(false), m_playerLogout(false), m_playerRecentlyLogout(false),
+WorldSession::WorldSession(uint32 id, std::string&& name, const std::shared_ptr<WorldSocket>& sock, AccountTypes sec, uint8 expansion, time_t mute_time, std::string os, LocaleConstant locale, uint32 recruiter, bool isARecruiter, AuthFlags flag):
+m_muteTime(mute_time), m_timeOutTime(0), _countPenaltiesHwid(0), _player(nullptr), m_map(nullptr), _security(sec), _accountId(id), m_expansion(expansion), m_accountExpansion(expansion), _logoutTime(0), m_inQueue(false), m_playerLogout(false), m_playerRecentlyLogout(false),
 m_playerSave(false), m_sessionDbLocaleIndex(locale), m_latency(0), _tutorialsChanged(false), recruiterId(recruiter), isRecruiter(isARecruiter), timeCharEnumOpcode(0), playerLoginCounter(0), forceExit(false), m_sUpdate(false), wardenModuleFailed(false), atAuthFlag(flag), canLogout(false)
 {
     _os = std::move(os);
@@ -106,7 +106,7 @@ m_playerSave(false), m_sessionDbLocaleIndex(locale), m_latency(0), _tutorialsCha
     m_IsPetBattleJournalLocked = false;
     
     // Personal Rate
-    QueryResult result = LoginDatabase.PQuery("SELECT rate from `account_rates` where realm = %u and account = %u and bnet_account = %u", sWorld->GetRealmId(), GetAccountId(), GetBattlenetAccountId());
+    QueryResult result = LoginDatabase.PQuery("SELECT rate from `account_rates` where realm = %u and account = %u", sWorld->GetRealmId(), GetAccountId());
     
     if (result)
     {
@@ -1061,7 +1061,7 @@ ObjectGuid WorldSession::GetAccountGUID() const
 
 ObjectGuid  WorldSession::GetBattlenetAccountGUID() const
 {
-    return ObjectGuid::Create<HighGuid::BNetAccount>(GetBattlenetAccountId());
+    return ObjectGuid::Create<HighGuid::BNetAccount>(GetAccountId());
 }
 
 class AccountInfoQueryHolderPerRealm : public SQLQueryHolder
@@ -1081,7 +1081,7 @@ public:
         SetSize(MAX_QUERIES);
     }
 
-    bool Initialize(uint32 accountId, uint32 /*battlenetAccountId*/)
+    bool Initialize(uint32 accountId)
     {
         bool ok = true;
 
@@ -1117,7 +1117,7 @@ public:
         SetSize(MAX_QUERIES);
     }
 
-    bool Initialize(uint32 accountId, uint32 /*battlenetAccountId*/, uint32 _realmID)
+    bool Initialize(uint32 accountId, uint32 _realmID)
     {
         bool ok = true;
 
@@ -1137,19 +1137,19 @@ public:
 void WorldSession::InitializeSession()
 {
     auto realmHolder = new AccountInfoQueryHolderPerRealm();
-    if (!realmHolder->Initialize(GetAccountId(), GetBattlenetAccountId()))
+    if (!realmHolder->Initialize(GetAccountId()))
     {
         delete realmHolder;
-        SendAuthResponse(ERROR_INTERNAL, false, false);
+        SendAuthResponse(ERROR_INTERNAL, false);
         return;
     }
 
     auto holder = new AccountInfoQueryHolder();
-    if (!holder->Initialize(GetAccountId(), GetBattlenetAccountId(), _realmID))
+    if (!holder->Initialize(GetAccountId(), _realmID))
     {
         delete realmHolder;
         delete holder;
-        SendAuthResponse(ERROR_INTERNAL, false, false);
+        SendAuthResponse(ERROR_INTERNAL, false);
         return;
     }
 
@@ -1164,27 +1164,8 @@ void WorldSession::InitializeSessionCallback(SQLQueryHolder* realmHolder, SQLQue
     LoadCharacterTemplates(holder->GetPreparedResult(AccountInfoQueryHolder::GLOBAL_REALM_CHARACTER_TEMPLATE));
     LoadAchievement(realmHolder->GetPreparedResult(AccountInfoQueryHolderPerRealm::ACHIEVEMENTS));
 
-	//QueryResult resultp = LoginDatabase.PQuery("SELECT limit FROM account WHERE id = %u", GetAccountId());
-
-	QueryResult resultado = LoginDatabase.PQuery("SELECT `limit` FROM account WHERE id = %u", GetAccountId());
-	bool chartemplate = false;
-	if (resultado)
-	{
-		Field* fields = resultado->Fetch();
-		uint32 counterpoll = fields[0].GetInt8();
-	
-
-		if (counterpoll < 3)
-			chartemplate = true;
-		else
-			chartemplate = false;
-	}
-	
-
-	
-
     if (!m_inQueue)
-        SendAuthResponse(ERROR_OK, chartemplate, false);
+        SendAuthResponse(ERROR_OK, false);
     else
         SendAuthWaitQue(0);
 
@@ -1225,9 +1206,9 @@ void WorldSession::InitializeSessionCallback(SQLQueryHolder* realmHolder, SQLQue
 void WorldSession::SetPersonalXPRate(float rate)
 {
     if (!rate)
-        LoginDatabase.PExecute("delete from `account_rates` where realm = %u and account = %u and bnet_account = %u", sWorld->GetRealmId(), GetAccountId(), GetBattlenetAccountId());
+        LoginDatabase.PExecute("delete from `account_rates` where realm = %u and account = %u", sWorld->GetRealmId(), GetAccountId());
     else
-        LoginDatabase.PExecute("REPLACE INTO `account_rates` (`account`, `bnet_account`, `realm`, `rate`) VALUES ('%u', '%u', '%u', '%f');", GetAccountId(), GetBattlenetAccountId(), sWorld->GetRealmId(), rate);
+        LoginDatabase.PExecute("REPLACE INTO `account_rates` (`account`, `realm`, `rate`) VALUES ('%u', '%u', '%f');", GetAccountId(), sWorld->GetRealmId(), rate);
     
     PersonalXPRate = rate;
 }

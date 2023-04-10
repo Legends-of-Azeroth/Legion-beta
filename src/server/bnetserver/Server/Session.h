@@ -1,19 +1,18 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef Session_h__
@@ -90,28 +89,13 @@ namespace Battlenet
             uint32 LastPlayedTime;
         };
 
-        struct GameAccountInfo
-        {
-            void LoadResult(Field* fields);
-
-            uint32 Id;
-            std::string Name;
-            std::string DisplayName;
-            uint32 UnbanDate;
-            bool IsSuspended;
-            bool IsBanned;
-            AccountTypes SecurityLevel;
-
-            std::unordered_map<uint32 /*realmAddress*/, uint8> CharacterCounts;
-            std::unordered_map<std::string /*subRegion*/, LastPlayedCharacterInfo> LastPlayedCharacters;
-        };
-
         struct AccountInfo
         {
             void LoadResult(PreparedQueryResult result);
 
             uint32 Id;
             std::string Login;
+            std::string DisplayName;
             bool IsLockedToIP;
             std::string LockCountry;
             std::string LastIP;
@@ -120,8 +104,11 @@ namespace Battlenet
             bool IsBanned;
             uint8 IsActivated;
             uint32 Pid;
+            uint32 UnbanDate;
+            AccountTypes SecurityLevel;
 
-            std::unordered_map<uint32, GameAccountInfo> GameAccounts;
+            std::unordered_map<uint32 /*realmAddress*/, uint8> CharacterCounts;
+            std::unordered_map<std::string /*subRegion*/, LastPlayedCharacterInfo> LastPlayedCharacters;
         };
 
         explicit Session(tcp::socket&& socket);
@@ -131,7 +118,6 @@ namespace Battlenet
         bool Update() override;
 
         uint32 GetAccountId() const;
-        uint32 GetGameAccountId() const;
 
         void SendResponse(uint32 token, pb::Message const* response);
         void SendResponse(uint32 token, uint32 status);
@@ -173,7 +159,6 @@ namespace Battlenet
         MessageBuffer _packetBuffer;
 
         std::unique_ptr<AccountInfo> _accountInfo;
-        GameAccountInfo* _gameAccountInfo;          // Points at selected game account (inside _gameAccounts)
 
         std::string _locale;
         std::string _os;

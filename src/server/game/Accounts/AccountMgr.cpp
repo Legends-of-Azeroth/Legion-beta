@@ -1,19 +1,19 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "AccountMgr.h"
@@ -22,14 +22,18 @@
 #include "Player.h"
 #include "Util.h"
 #include "SHA1.h"
+#include "SHA256.h"
 
 namespace AccountMgr
 {
 
 AccountOpResult CreateAccount(std::string username, std::string password)
 {
-    if (utf8length(username) > MAX_ACCOUNT_STR)
+    if (utf8length(username) > MAX_EMAIL_STR)
         return AccountOpResult::AOR_NAME_TOO_LONG;          // username's too long
+
+    if (utf8length(password) > MAX_PASS_STR)
+        return AccountOpResult::AOR_PASS_TOO_LONG;
 
     Utf8ToUpperOnlyLatin(username);
     Utf8ToUpperOnlyLatin(password);
@@ -38,15 +42,9 @@ AccountOpResult CreateAccount(std::string username, std::string password)
         return AccountOpResult::AOR_NAME_ALREADY_EXIST;     // username does already exist
 
     PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_INS_ACCOUNT);
-
     stmt->setString(0, username);
     stmt->setString(1, CalculateShaPassHash(username, password));
-
     LoginDatabase.Execute(stmt);
-
-    //stmt = LoginDatabase.GetPreparedStatement(LOGIN_INS_REALM_CHARACTERS_INIT);
-
-    //LoginDatabase.Execute(stmt);
 
     return AccountOpResult::AOR_OK;                         // everything's fine
 }
@@ -132,10 +130,10 @@ AccountOpResult ChangeUsername(uint32 accountId, std::string newUsername, std::s
     if (!result)
         return AccountOpResult::AOR_NAME_NOT_EXIST;
 
-    if (utf8length(newUsername) > MAX_ACCOUNT_STR)
+    if (utf8length(newUsername) > MAX_EMAIL_STR)
         return AccountOpResult::AOR_NAME_TOO_LONG;
 
-    if (utf8length(newPassword) > MAX_ACCOUNT_STR)
+    if (utf8length(newPassword) > MAX_PASS_STR)
         return AccountOpResult::AOR_PASS_TOO_LONG;
 
     Utf8ToUpperOnlyLatin(newUsername);
@@ -159,7 +157,7 @@ AccountOpResult ChangePassword(uint32 accountId, std::string newPassword)
     if (!GetName(accountId, username))
         return AccountOpResult::AOR_NAME_NOT_EXIST;     // account doesn't exist
 
-    if (utf8length(newPassword) > MAX_ACCOUNT_STR)
+    if (utf8length(newPassword) > MAX_PASS_STR)
         return AccountOpResult::AOR_PASS_TOO_LONG;
 
     Utf8ToUpperOnlyLatin(username);
@@ -246,16 +244,19 @@ uint32 GetCharactersCount(uint32 accountId)
     return result ? (*result)[0].GetUInt64() : 0;
 }
 
-std::string CalculateShaPassHash(std::string& name, std::string& password)
+std::string CalculateShaPassHash(const std::string& name, const std::string& password)
 {
-    SHA1Hash sha;
-    sha.Initialize();
-    sha.UpdateData(name);
+    SHA256Hash email;
+    email.UpdateData(name);
+    email.Finalize();
+
+    SHA256Hash sha;
+    sha.UpdateData(ByteArrayToHexStr(email.GetDigest(), email.GetLength()));
     sha.UpdateData(":");
     sha.UpdateData(password);
     sha.Finalize();
 
-    return ByteArrayToHexStr(sha.GetDigest(), sha.GetLength());
+    return ByteArrayToHexStr(sha.GetDigest(), sha.GetLength(), true);
 }
 
 bool IsPlayerAccount(uint32 gmlevel)
@@ -263,35 +264,19 @@ bool IsPlayerAccount(uint32 gmlevel)
     return gmlevel == SEC_PLAYER;
 }
 
-bool IsDonorAccount(uint32 gmlevel) {
-	return gmlevel >= SEC_DONOR && gmlevel <= SEC_BUGTRACKER;
-}
-
-bool IsBugTrackerAccount(uint32 gmlevel) {
-	return gmlevel >= SEC_BUGTRACKER && gmlevel <= SEC_MODERATOR;
-}
-
 bool IsModeratorAccount(uint32 gmlevel)
 {
-    return gmlevel >= SEC_MODERATOR && gmlevel <= SEC_TRAIL_GM;
-}
-
-bool IsTrailGMAccount(uint32 gmlevel) {
-	return gmlevel >= SEC_TRAIL_GM && gmlevel <= SEC_GAMEMASTER;
+    return gmlevel >= SEC_MODERATOR && gmlevel <= SEC_CONSOLE;
 }
 
 bool IsGMAccount(uint32 gmlevel)
 {
-    return gmlevel >= SEC_GAMEMASTER && gmlevel <= SEC_ADMINISTRATOR;
+    return gmlevel >= SEC_GAMEMASTER && gmlevel <= SEC_CONSOLE;
 }
 
 bool IsAdminAccount(uint32 gmlevel)
 {
-    return gmlevel >= SEC_ADMINISTRATOR && gmlevel <= SEC_DEVELOPER;
-}
-
-bool IsDevAccount(uint32 gmlevel) {
-	return gmlevel >= SEC_DEVELOPER && gmlevel <= SEC_CONSOLE;
+    return gmlevel >= SEC_ADMINISTRATOR && gmlevel <= SEC_CONSOLE;
 }
 
 bool IsConsoleAccount(uint32 gmlevel)

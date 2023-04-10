@@ -1,19 +1,19 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef _ACCMGR_H
@@ -33,9 +33,8 @@ enum class AccountOpResult : uint8
     AOR_DB_INTERNAL_ERROR,
 };
 
-#define MAX_PASS_STR 32
-#define MAX_ACCOUNT_STR 32
-#define MAX_EMAIL_STR 64
+#define MAX_PASS_STR 16
+#define MAX_EMAIL_STR 320
 
 namespace AccountMgr
 {
@@ -50,16 +49,12 @@ namespace AccountMgr
     uint32 GetSecurity(uint32 accountId, int32 realmId);
     bool GetName(uint32 accountId, std::string& name);
     uint32 GetCharactersCount(uint32 accountId);
-    std::string CalculateShaPassHash(std::string& name, std::string& password);
+    std::string CalculateShaPassHash(const std::string& name, const std::string& password);
 
     bool IsPlayerAccount(uint32 gmlevel);
-	bool IsDonorAccount(uint32 gmlevel);
-	bool IsBugTrackerAccount(uint32 gmlevel);
     bool IsModeratorAccount(uint32 gmlevel);
-	bool IsTrailGMAccount(uint32 gmlevel);
     bool IsGMAccount(uint32 gmlevel);
     bool IsAdminAccount(uint32 gmlevel);
-	bool IsDevAccount(uint32 gmlevel);
     bool IsConsoleAccount(uint32 gmlevel);
 };
 

@@ -1,19 +1,18 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -42,7 +41,7 @@ public:
         static std::vector<ChatCommand> lookupPlayerCommandTable =
         {
             { "ip",             SEC_GAMEMASTER,     true,  &HandleLookupPlayerIpCommand,        ""},
-            { "account",        SEC_GAMEMASTER,     true,  &HandleLookupPlayerAccountCommand,   ""},
+            { "account",        SEC_GAMEMASTER,     true,  &HandleLookupPlayerEmailCommand,     ""},
             { "email",          SEC_GAMEMASTER,     true,  &HandleLookupPlayerEmailCommand,     ""}
         };
         static std::vector<ChatCommand> lookupCommandTable =
@@ -1146,31 +1145,6 @@ public:
         return true;
     }
 
-    static bool HandleLookupPlayerAccountCommand(ChatHandler* handler, char const* args)
-    {
-        if (!*args)
-            return false;
-
-        std::string account = strtok((char*)args, " ");
-        char* limitStr = strtok(NULL, " ");
-        int32 limit = limitStr ? atoi(limitStr) : -1;
-
-        if (!Utf8ToUpperOnlyLatin(account))
-            return false;
-
-        PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_LIST_BY_NAME);
-        stmt->setString(0, account);
-
-        uint32 accountId = handler->GetSession()->GetAccountId();
-        LoginDatabase.CallBackQuery(stmt, [accountId, limit](PreparedQueryResult result) -> void
-        {
-            if (WorldSessionPtr sess = sWorld->FindSession(accountId))
-                sess->LookupPlayerSearchCommand(result, limit);
-        });
-
-        return true;
-    }
-
     static bool HandleLookupPlayerEmailCommand(ChatHandler* handler, char const* args)
     {
         if (!*args)
@@ -1180,7 +1154,8 @@ public:
         char* limitStr = strtok(NULL, " ");
         int32 limit = limitStr ? atoi(limitStr) : -1;
 
-        PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_LIST_BY_EMAIL);
+        // the account name and email address are the same since the switch to bnet accounts
+        PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_LIST_BY_NAME);
         stmt->setString(0, email);
 
         uint32 accountId = handler->GetSession()->GetAccountId();

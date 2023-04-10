@@ -1,19 +1,18 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef _LOGINDATABASE_H
@@ -54,7 +53,6 @@ enum LoginDatabaseStatements
     LOGIN_SEL_ACCOUNT_ID_BY_NAME,
     LOGIN_SEL_ACCOUNT_LIST_BY_NAME,
     LOGIN_SEL_ACCOUNT_INFO_BY_NAME,
-    LOGIN_SEL_ACCOUNT_LIST_BY_EMAIL,
     LOGIN_SEL_ACCOUNT_BY_IP,
     LOGIN_INS_IP_BANNED,
     LOGIN_DEL_IP_NOT_BANNED,
@@ -104,17 +102,7 @@ enum LoginDatabaseStatements
     LOGIN_ADD_TRANSFERTS_LOGS,
 
     LOGIN_SEL_BNET_ACCOUNT_INFO,
-    LOGIN_SEL_BNET_ACCOUNT_INFO_BY_ACC,
-    LOGIN_UPD_BNET_LAST_LOGIN_INFO,
-    LOGIN_INS_BNET_ACCOUNT,
-    LOGIN_SEL_BNET_ACCOUNT_EMAIL_BY_ID,
-    LOGIN_SEL_BNET_ACCOUNT_ID_BY_EMAIL,
-    LOGIN_UPD_BNET_PASSWORD,
-    LOGIN_SEL_BNET_CHECK_PASSWORD,
-    LOGIN_UPD_BNET_ACCOUNT_LOCK,
-    LOGIN_UPD_BNET_ACCOUNT_LOCK_CONTRY,
-    LOGIN_SEL_BNET_ACCOUNT_ID_BY_GAME_ACCOUNT,
-    LOGIN_SEL_BNET_ACCOUNT_EMAIL_BY_ACC,
+    LOGIN_UPD_LAST_LOGIN_INFO,
 
     LOGIN_UPD_AT_AUTH_FLAG,
     LOGIN_SEL_BATTLEPAY_COINS,
@@ -122,11 +110,10 @@ enum LoginDatabaseStatements
     
     LOGIN_SEL_ACCOUNT_INFO_CONTINUED_SESSION,
     LOGIN_UPD_ACCOUNT_INFO_CONTINUED_SESSION,
-    LOGIN_UPD_BNET_GAME_ACCOUNT_LOGIN_INFO,
+    LOGIN_UPD_ACCOUNT_LOGIN_INFO,
     LOGIN_SEL_BNET_LAST_PLAYER_CHARACTERS,
     LOGIN_DEL_BNET_LAST_PLAYER_CHARACTERS,
     LOGIN_INS_BNET_LAST_PLAYER_CHARACTERS,
-    LOGIN_SEL_BNET_CHARACTER_COUNTS_BY_BNET_ID,
     LOGIN_SEL_BNET_CHARACTER_COUNTS_BY_ACCOUNT_ID,
     LOGIN_SEL_ACCOUNT_IP_ACCESS,
     

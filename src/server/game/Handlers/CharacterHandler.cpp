@@ -1,19 +1,19 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "DatabaseEnv.h"
@@ -121,7 +121,7 @@ void WorldSession::HandleCharEnum(PreparedQueryResult result, bool isDeleted)
         WorldPackets::Character::EnumCharactersResult::RaceUnlock raceUnlock;
         raceUnlock.RaceID = requirement.first;
         raceUnlock.HasExpansion = GetAccountExpansion() >= requirement.second.Expansion;
-        raceUnlock.HasAchievement = requirement.second.AchievementId == 0 || HasAchievement(requirement.second.AchievementId) || sWorld->getBoolConfig(CONFIG_IS_TEST_SERVER);
+        raceUnlock.HasAchievement = requirement.second.AchievementId == 0 || HasAchievement(requirement.second.AchievementId);
         raceUnlock.HasHeritageArmor = true;
         charEnum.RaceUnlockData.push_back(raceUnlock);
     }
@@ -450,7 +450,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPackets::Character::CreateChar& c
             TC_LOG_INFO(LOG_FILTER_CHARACTER, "Account: %d (IP: %s) Create Character:[%s] (GUID: %u)", GetAccountId(), GetRemoteAddress().c_str(), createInfo->Name.c_str(), newChar.GetGUIDLow());
             sScriptMgr->OnPlayerCreate(&newChar);
             sWorld->AddCharacterInfo(newChar.GetGUIDLow(), std::string(newChar.GetName()), newChar.getGender(), newChar.getRace(), newChar.getClass(), newChar.getLevel(), GetAccountId());
-            sWorld->UpdateCharacterAccount(newChar.GetGUIDLow(), GetBattlenetAccountId());
+            sWorld->UpdateCharacterAccount(newChar.GetGUIDLow(), GetAccountId());
 
             newChar.GetAchievementMgr()->ClearMap();
             newChar.CleanupsBeforeDelete();
@@ -585,7 +585,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     SendTutorialsData();
 
-    sWorld->UpdateCharacterAccount(playerGuid.GetGUIDLow(), GetBattlenetAccountId());
+    sWorld->UpdateCharacterAccount(playerGuid.GetGUIDLow(), GetAccountId());
 
     pCurrChar->GetMotionMaster()->Initialize();
     pCurrChar->SendDungeonDifficulty();
@@ -805,8 +805,6 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         {
             player->setCinematic(1);
 
-            if (!sWorld->getBoolConfig(CONFIG_FUN_OPTION_ENABLED))
-            {
                 if (ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(player->getClass()))
                 {
                     Position pos;
@@ -830,7 +828,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
                     if (!sWorld->GetNewCharString().empty())
                         chatHandler.PSendSysMessage("%s", sWorld->GetNewCharString().c_str());
                 }
-            }
+            
         }
 
         if (!player->GetMap()->AddPlayerToMap(player) || !player->GetMap()->IsGarrison() && !player->CheckInstanceLoginValid())
@@ -2130,7 +2128,7 @@ void WorldSession::HandleUndeleteCharacter(WorldPackets::Character::UndeleteChar
     }
 
     auto stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_LAST_CHAR_UNDELETE);
-    stmt->setUInt32(0, GetBattlenetAccountId());
+    stmt->setUInt32(0, GetAccountId());
 
     auto undeleteInfo = packet.UndeleteInfo;
     _queryProcessor.AddQuery(CharacterDatabase.AsyncQuery(stmt).WithChainingPreparedCallback([undeleteInfo, SendUndeleteCharacterResponse](QueryCallback& queryCallback, PreparedQueryResult result)
@@ -2196,7 +2194,7 @@ void WorldSession::HandleUndeleteCharacter(WorldPackets::Character::UndeleteChar
         CharacterDatabase.Execute(stmt);
 
         stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_LAST_CHAR_UNDELETE);
-        stmt->setUInt32(0, GetBattlenetAccountId());
+        stmt->setUInt32(0, GetAccountId());
         CharacterDatabase.Execute(stmt);
 
         sWorld->UpdateCharacterInfoDeleted(undeleteInfo->CharacterGuid.GetCounter(), false, &undeleteInfo->Name);
@@ -2209,7 +2207,7 @@ void WorldSession::HandleUndeleteCharacter(WorldPackets::Character::UndeleteChar
 void WorldSession::HandleGetUndeleteCharacterCooldownStatus(WorldPackets::Character::GetUndeleteCharacterCooldownStatus& /*packet*/)
 {
     auto stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_LAST_CHAR_UNDELETE);
-    stmt->setUInt32(0, GetBattlenetAccountId());
+    stmt->setUInt32(0, GetAccountId());
     _queryProcessor.AddQuery(CharacterDatabase.AsyncQuery(stmt).WithPreparedCallback(std::bind(&WorldSession::HandleUndeleteCooldownStatusCallback, this, std::placeholders::_1)));
 }
 

@@ -1,19 +1,18 @@
 /*
- *###############################################################################
- *#                                                                             #
- *# Copyright (C) 2022 Project Nighthold <https://github.com/ProjectNighthold>  #
- *#                                                                             #
- *# This file is free software; as a special exception the author gives         #
- *# unlimited permission to copy and/or distribute it, with or without          #
- *# modifications, as long as this notice is preserved.                         #
- *#                                                                             #
- *# This program is distributed in the hope that it will be useful, but         #
- *# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the      #
- *# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    #
- *#                                                                             #
- *# Read the THANKS file on the source root directory for more info.            #
- *#                                                                             #
- *###############################################################################
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "LoginRESTService.h"
@@ -256,29 +255,7 @@ int32 LoginRESTService::HandlePost(soap* soapClient)
     Utf8ToUpperOnlyLatin(login);
     Utf8ToUpperOnlyLatin(password);
     
-    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_ACCOUNT_EMAIL_BY_ACC);
-
-    if (sConfigMgr->GetBoolDefault("Login.with.account", false))
-    {
-        const char* c_login = login.c_str();
-        if (c_login)
-        {
-
-            char* sobaka = strchr((char*)c_login, '@');
-            if (sobaka == NULL) // not email
-            {
-                stmt->setString(0, login);
-                if (PreparedQueryResult result = LoginDatabase.Query(stmt)) // select email for auth process
-                {
-                    Field* field = result->Fetch();
-                    login = field[0].GetString();
-                    Utf8ToUpperOnlyLatin(login);
-                }
-            }
-
-        }
-    }
-    stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_ACCOUNT_INFO);
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_ACCOUNT_INFO);
 
     stmt->setString(0, login);
     stmt->setString(1, CalculateShaPassHash(login, std::move(password)));
@@ -288,15 +265,14 @@ int32 LoginRESTService::HandlePost(soap* soapClient)
         std::unique_ptr<Battlenet::Session::AccountInfo> accountInfo = Trinity::make_unique<Battlenet::Session::AccountInfo>();
         accountInfo->LoadResult(result);
 
-        stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_CHARACTER_COUNTS_BY_BNET_ID);
+        stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_CHARACTER_COUNTS_BY_ACCOUNT_ID);
         stmt->setUInt32(0, accountInfo->Id);
         if (PreparedQueryResult characterCountsResult = LoginDatabase.Query(stmt))
         {
             do
             {
                 Field* fields = characterCountsResult->Fetch();
-                accountInfo->GameAccounts[fields[0].GetUInt32()]
-                    .CharacterCounts[Battlenet::RealmHandle{ fields[3].GetUInt8(), fields[4].GetUInt8(), fields[2].GetUInt32() }.GetAddress()] = fields[1].GetUInt8();
+                accountInfo->CharacterCounts[Battlenet::RealmHandle{ fields[3].GetUInt8(), fields[4].GetUInt8(), fields[2].GetUInt32() }.GetAddress()] = fields[1].GetUInt8();
 
             } while (characterCountsResult->NextRow());
         }
@@ -307,8 +283,7 @@ int32 LoginRESTService::HandlePost(soap* soapClient)
         {
             Field* fields = lastPlayerCharactersResult->Fetch();
             Battlenet::RealmHandle realmId{ fields[1].GetUInt8(), fields[2].GetUInt8(), fields[3].GetUInt32() };
-            Battlenet::Session::LastPlayedCharacterInfo& lastPlayedCharacter = accountInfo->GameAccounts[fields[0].GetUInt32()]
-                .LastPlayedCharacters[realmId.GetSubRegionAddress()];
+            Battlenet::Session::LastPlayedCharacterInfo& lastPlayedCharacter = accountInfo->LastPlayedCharacters[realmId.GetSubRegionAddress()];
 
             lastPlayedCharacter.RealmId = realmId;
             lastPlayedCharacter.CharacterName = fields[4].GetString();
