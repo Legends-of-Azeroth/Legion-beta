@@ -95,7 +95,7 @@ jobs:
           cd ${{github.workspace}}/build/bin
           dir
           copy "C:/Program Files/OpenSSL/bin/libcrypto-1_1-x64.dll" ${{github.workspace}}/build/bin/RelWithDebInfo/libssl-1_1-x64.dll
-          copy "c:/Program Files/OpenSSL/bin/libcrypto-3-x64.dll" ${{github.workspace}}/build/bin/RelWithDebInfo/libcrypto-1_1-x64.dll
+          copy "c:/Program Files/OpenSSL/bin/libcrypto-1_1-x64.dll" ${{github.workspace}}/build/bin/RelWithDebInfo/libcrypto-1_1-x64.dll
           7z a -tzip ${{env.ARCHIVE_FILENAME}} RelWithDebInfo
     - name: Archive this artefact
       uses: actions/upload-artifact@v2
