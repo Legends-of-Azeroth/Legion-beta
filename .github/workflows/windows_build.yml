@@ -2,9 +2,7 @@ name: windows-build
 
 on:
   push:
-    paths-ignore:
-      - 'sql/**'    
-  pull_request:
+    branches: [ master, development ]
     paths-ignore:
       - 'sql/**'
       
@@ -15,16 +13,16 @@ concurrency:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: RelWithDebInfo
+  BUILD_TYPE: Release
   REPO_DIR : ${{github.workspace}}
   BUILD_DIR: ${{github.workspace}}/bin/builddir
-  BOOST_TOOLSET: "msvc14.1"
-  BOOST_VERSION: "1.69.0"
+  BOOST_TOOLSET: "msvc14.0"
+  BOOST_VERSION: "1.64.00"
   BOOST_INSTALL_DIR: "${{github.workspace}}/bin"
   
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2017
     
     steps:
     #git checkout
@@ -78,11 +76,13 @@ jobs:
     #build and install
     - name: windows build & install
       run: |
+
         cd $GITHUB_WORKSPACE
         
         mkdir -p build && cd build
-        cmake .. -DTOOLS=ON -DELUNA=0 -A x64
+        cmake .. -DTOOLS=ON -A x64
         cmake --build . --config RelWithDebInfo --parallel 4
+
       #git bash shell
       shell: bash
     - name: Create Upload File Name
@@ -120,5 +120,5 @@ jobs:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         automatic_release_tag: "latest"
         prerelease: true
-        title: " New Development Build(${{ steps.date.outputs.date }})"
+        title: "Development Build(${{ steps.date.outputs.date }})"
         files: all_snapshots
